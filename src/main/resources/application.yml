@@ -1,23 +1,32 @@
-spring:
-  application:
-    name: pedeai
-  datasource:
-    url: jdbc:mysql://localhost:3306/pedeai?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-    username: admin
-    password: admin
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
-        format_sql: true
-logging:
-  level:
-    org:
-      hibernate:
-        SQL: DEBUG
-        type:
-          descriptor:
-            sql: TRACE
+version: "3.8"
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: pedeai-db
+    environment:
+      MYSQL_DATABASE: pedeai
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "db", "-uadmin", "-padmin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    image: leonartlimadev/pedeai:latest
+    container_name: pedeai-app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/pedeai?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
